@@ -10,6 +10,9 @@ public class RespawnManager : MonoBehaviour
     [SerializeField] private Material greenMaterial;
     private RelativeMovement playerMovement; // Reference to RelativeMovement
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource flagSound; // Assign this in the inspector
+
     private void Start()
     {
         // Initialize with the player's starting position
@@ -26,12 +29,24 @@ public class RespawnManager : MonoBehaviour
             lastRespawnPosition = other.transform.position;
             Debug.Log("Collided with respawn point. New respawn position: " + lastRespawnPosition);
 
-            // Update flag colors
-            UpdateFlagColor(other.gameObject, greenMaterial);
+            // Update flag colors and play sound only if it's a new respawn flag
             if (lastRespawnFlag != null && lastRespawnFlag != other.gameObject)
             {
                 UpdateFlagColor(lastRespawnFlag, redMaterial);
             }
+            
+            // Check if the new respawn point is different from the previous one
+            if (lastRespawnFlag != other.gameObject)
+            {
+                UpdateFlagColor(other.gameObject, greenMaterial);
+                
+                // Play the flag sound only when the flag turns green
+                if (flagSound != null)
+                {
+                    flagSound.PlayOneShot(flagSound.clip);
+                }
+            }
+            
             lastRespawnFlag = other.gameObject;
         }
         else if (other.CompareTag("DeathRespawner"))

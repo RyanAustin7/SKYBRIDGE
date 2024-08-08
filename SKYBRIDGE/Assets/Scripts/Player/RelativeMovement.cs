@@ -13,6 +13,10 @@ public class RelativeMovement : MonoBehaviour
     [SerializeField] float _terminalVelocity = -20.0f;
     [SerializeField] float _minFall = -1.5f;
     [SerializeField] float _coyoteTime = 0.1f; // Coyote time duration
+    [Header("Audio")]
+    [SerializeField] private AudioSource bounceSound; // Assign this in the inspector
+    [SerializeField] private AudioSource popSound; // Assign this in the inspector
+    [SerializeField] private AudioSource jumpSound; // Assign this in the inspector
 
     private float _vertSpeed;
     private float _groundCheckDistance;
@@ -74,6 +78,12 @@ public class RelativeMovement : MonoBehaviour
                     _vertSpeed = _jumpSpeed;
                     _anim.SetTrigger("JumpTrigger"); // Trigger the jump start animation
                     _isJumping = true;
+
+                    // Play the jump sound when the player jumps
+                    if (jumpSound != null)
+                    {
+                        jumpSound.PlayOneShot(jumpSound.clip);
+                    }
                 }
             }
             else
@@ -99,6 +109,12 @@ public class RelativeMovement : MonoBehaviour
                 _vertSpeed = _jumpSpeed;
                 _anim.SetTrigger("JumpTrigger"); // Trigger the jump start animation
                 _coyoteTimeCounter = 0; // Reset coyote time counter after jumping
+
+                // Play the jump sound when the player jumps during coyote time
+                if (jumpSound != null)
+                {
+                    jumpSound.PlayOneShot(jumpSound.clip);
+                }
             }
             
             _vertSpeed += _gravity * 5 * Time.deltaTime;
@@ -153,14 +169,26 @@ public class RelativeMovement : MonoBehaviour
         if (bounceScript != null)
         {
             ApplyBounce(bounceScript.bounceForce);
+            
+            // Play the bounce sound with a random pitch
+            if (bounceSound != null)
+            {
+                bounceSound.pitch = Random.Range(0.78f, 1.4f); // Set random pitch
+                bounceSound.PlayOneShot(bounceSound.clip);
+            }
         }
 
-        // Check if the player is colliding with a breaking platform
         BreakingPlatform breakingPlatform = hit.gameObject.GetComponent<BreakingPlatform>();
         if (breakingPlatform != null)
         {
             // Start the coroutine to deactivate and reactivate the platform
             StartCoroutine(breakingPlatform.DeactivateAndReactivateCoroutine());
+
+            // Play the pop sound when colliding with the breaking platform
+            if (popSound != null)
+            {
+                popSound.PlayOneShot(popSound.clip);
+            }
         }
     }
 

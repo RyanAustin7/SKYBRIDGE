@@ -10,6 +10,10 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] GameObject fireballPrefab;
     [SerializeField] Collider detectionTrigger; // Public variable for the trigger collider
 
+    [SerializeField] AudioSource loopAudioSource; // Loops and always plays for the enemy
+    [SerializeField] AudioSource shootAudioSource; // Plays when the enemy shoots
+    [SerializeField] AudioSource playerDetectedAudioSource; // Plays when the player enters the detection zone
+
     private int currentPointIndex = 0;
     private bool playerInRange;
     private Transform playerTransform;
@@ -34,6 +38,12 @@ public class EnemyAI : MonoBehaviour
         {
             // Assign the trigger events
             detectionTrigger.gameObject.AddComponent<TriggerHandler>().Initialize(this);
+        }
+
+        if (loopAudioSource != null)
+        {
+            loopAudioSource.loop = true;
+            loopAudioSource.Play();
         }
     }
 
@@ -76,6 +86,11 @@ public class EnemyAI : MonoBehaviour
             playerInRange = true;
             playerTransform = other.transform;
             isShooting = true; // Set the flag to true when the player is in range
+
+            if (playerDetectedAudioSource != null)
+            {
+                playerDetectedAudioSource.PlayOneShot(playerDetectedAudioSource.clip);
+            }
         }
     }
 
@@ -105,6 +120,11 @@ public class EnemyAI : MonoBehaviour
                 if (fireballScript != null)
                 {
                     fireballScript.SetDirection(transform.forward); // Pass direction if needed
+                }
+
+                if (shootAudioSource != null)
+                {
+                    shootAudioSource.PlayOneShot(shootAudioSource.clip);
                 }
             }
             yield return new WaitForSeconds(shootInterval);
