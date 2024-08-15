@@ -8,50 +8,46 @@ public class RespawnManager : MonoBehaviour
     private GameObject lastRespawnFlag;
     [SerializeField] private Material redMaterial;
     [SerializeField] private Material greenMaterial;
-    private RelativeMovement playerMovement; // Reference to RelativeMovement
-
+    private RelativeMovement playerMovement;
     [Header("Audio")]
-    [SerializeField] private AudioSource flagSound; // Assign this in the inspector
+    [SerializeField] private AudioSource flagSound;
+    [Header("Powerups")]
+    [SerializeField] public SlowFallPowerup slowFallPowerup;
+    [SerializeField] public SpeedBoost speedBoost;
 
     private void Start()
     {
-        // Initialize with the player's starting position
         lastRespawnPosition = transform.position;
         charController = GetComponent<CharacterController>();
-        playerMovement = GetComponent<RelativeMovement>(); // Get the RelativeMovement component
+        playerMovement = GetComponent<RelativeMovement>();
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("RespawnPoint"))
         {
-            // Update the last respawn position when contacting a respawn point
             lastRespawnPosition = other.transform.position;
             Debug.Log("Collided with respawn point. New respawn position: " + lastRespawnPosition);
 
-            // Update flag colors and play sound only if it's a new respawn flag
             if (lastRespawnFlag != null && lastRespawnFlag != other.gameObject)
             {
                 UpdateFlagColor(lastRespawnFlag, redMaterial);
             }
-            
-            // Check if the new respawn point is different from the previous one
+
             if (lastRespawnFlag != other.gameObject)
             {
                 UpdateFlagColor(other.gameObject, greenMaterial);
-                
-                // Play the flag sound only when the flag turns green
+
                 if (flagSound != null)
                 {
                     flagSound.PlayOneShot(flagSound.clip);
                 }
             }
-            
+
             lastRespawnFlag = other.gameObject;
         }
         else if (other.CompareTag("DeathRespawner"))
         {
-            // Trigger respawn logic
             Debug.Log("Collided with Death Respawner. Respawning at: " + lastRespawnPosition);
             StartCoroutine(HandleRespawn());
         }
@@ -59,35 +55,40 @@ public class RespawnManager : MonoBehaviour
 
     private IEnumerator HandleRespawn()
     {
-        // Disable the CharacterController
         if (charController != null)
         {
             charController.enabled = false;
         }
 
-        // Wait for a short period
         yield return new WaitForSeconds(0.1f);
 
-        // Move the player to the last respawn position
         transform.position = lastRespawnPosition;
         Debug.Log("Player position set to: " + transform.position);
 
-        // Re-enable the CharacterController
         if (charController != null)
         {
             charController.enabled = true;
         }
 
-        // Reset the speed boost
         if (playerMovement != null)
         {
             playerMovement.ResetSpeedBoost();
+            playerMovement.StopSlowFall(); // Directly stop slow fall on the player
+        }
+
+        if (slowFallPowerup != null)
+        {
+            slowFallPowerup.ResetPowerup(); // Ensure slow fall is stopped
+        }
+
+        if (speedBoost != null)
+        {
+            speedBoost.ResetPowerup(); // Ensure speed boost is stopped
         }
     }
 
     private void UpdateFlagColor(GameObject respawnPoint, Material material)
     {
-        // Find the flag child object and change its material
         Transform flagTransform = respawnPoint.transform.Find("Flag");
         if (flagTransform != null)
         {

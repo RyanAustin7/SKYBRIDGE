@@ -33,6 +33,10 @@ public class RelativeMovement : MonoBehaviour
     private bool _isGroundedLastFrame; // Track if the player was grounded in the previous frame
 
     private Coroutine _speedBoostCoroutine; // Reference to the active speed boost coroutine
+    private float _originalGravity;
+    private float _originalJumpSpeed;
+    private bool _isSlowFallActive;
+
 
     private void Start()
     {
@@ -41,8 +45,10 @@ public class RelativeMovement : MonoBehaviour
         _charController.radius = 0.4f;
         _groundCheckDistance = (_charController.height + _charController.radius) / _charController.height * 0.11f;
         _anim = gameObject.GetComponentInChildren<Animator>();
-        _originalAnimSpeed = _anim.speed; // Store the initial animation speed
-        _originalMoveSpeed = _moveSpeed; // Store the initial move speed
+        _originalAnimSpeed = _anim.speed; 
+        _originalMoveSpeed = _moveSpeed;
+        _originalGravity = _gravity; // Initialize original gravity
+        _originalJumpSpeed = _jumpSpeed; // Initialize original jump speed
     }
 
     private void Update()
@@ -131,6 +137,8 @@ public class RelativeMovement : MonoBehaviour
             }
         }
 
+        
+
         movement.y = _vertSpeed;
         movement += _knockbackVelocity; // Apply knockback if any
         _charController.Move(movement * Time.deltaTime);
@@ -159,6 +167,12 @@ public class RelativeMovement : MonoBehaviour
 
         _isGroundedLastFrame = _charController.isGrounded; // Update grounded status
     }
+
+    public bool IsSlowFallActive()
+    {
+        return _isSlowFallActive;
+    }
+
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
@@ -190,11 +204,23 @@ public class RelativeMovement : MonoBehaviour
                 popSound.PlayOneShot(popSound.clip);
             }
         }
+
+        if (hit.gameObject.CompareTag("DeathRespawner"))
+        {
+            StopSlowFall();
+        }
     }
 
     public void ApplyBounce(float bounceForce)
     {
-        _vertSpeed = bounceForce; // Apply the bounce force
+        if (_isSlowFallActive)
+        {
+            _vertSpeed = bounceForce * 0.5f; // Reduce bounce force if slow fall is active
+        }
+        else
+        {
+            _vertSpeed = bounceForce; // Apply the bounce force
+        }
     }
 
     public IEnumerator SpeedBoost(float boostAmount, float duration)
@@ -204,6 +230,7 @@ public class RelativeMovement : MonoBehaviour
         yield return new WaitForSeconds(duration);
         ResetSpeedBoost();
     }
+
 
     public void ApplyKnockback(Vector3 knockbackForce)
     {
@@ -233,4 +260,44 @@ public class RelativeMovement : MonoBehaviour
         }
         _speedBoostCoroutine = StartCoroutine(SpeedBoost(boostAmount, duration));
     }
+
+    private Coroutine _slowFallCoroutine; // Reference to the active slow fall coroutine
+
+    public void StartSlowFall(float gravityReduction, float jumpReduction, float duration)
+    {
+        _gravity = _originalGravity / gravityReduction; // Apply gravity reduction
+        _jumpSpeed = _originalJumpSpeed / jumpReduction; // Apply jump reduction
+        _isSlowFallActive = true;
+
+        // Reduce the animation speed by half
+        _anim.speed = _originalAnimSpeed * 0.5f;
+
+        if (_slowFallCoroutine != null)
+        {
+            StopCoroutine(_slowFallCoroutine);
+        }
+        _slowFallCoroutine = StartCoroutine(StopSlowFallAfterDuration(duration));
+    }
+
+    private IEnumerator StopSlowFallAfterDuration(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        StopSlowFall();
+    }
+
+   public void StopSlowFall()
+    {
+        _gravity = _originalGravity;
+        _jumpSpeed = _originalJumpSpeed;
+        _isSlowFallActive = false;
+
+        // Reset the animation speed to the original value
+        _anim.speed = _originalAnimSpeed;
+
+        if (_slowFallCoroutine != null)
+        {
+            StopCoroutine(_slowFallCoroutine);
+        }
+    }
+
 }

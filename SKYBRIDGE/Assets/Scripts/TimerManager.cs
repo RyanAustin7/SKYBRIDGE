@@ -6,15 +6,15 @@ using System.Collections.Generic;
 public class TimerManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI timerText;
-    [SerializeField] private TextMeshProUGUI finalTimesText; // New TMP for final times display
+    [SerializeField] private TextMeshProUGUI finalTimesText;
     [SerializeField] private Color flashColor = Color.green;
+    [SerializeField] private Color coinFlashColor = Color.yellow; // New color for coin flash
     [SerializeField] private float flashDuration = 1.0f;
     [SerializeField] private List<Transform> respawnFlags;
-    [SerializeField] private AudioSource finalFlagSound; // Assign this in the inspector
-
+    [SerializeField] private AudioSource finalFlagSound;
 
     private float timeElapsed;
-    private bool timerRunning = false; // Timer is not running at start
+    private bool timerRunning = false;
     private Color originalColor;
     private Dictionary<Transform, float> flagTimes;
     private bool[] flagsReached;
@@ -27,10 +27,10 @@ public class TimerManager : MonoBehaviour
 
         for (int i = 0; i < respawnFlags.Count; i++)
         {
-            flagTimes.Add(respawnFlags[i], -1f); // Initialize with -1 to indicate not reached
+            flagTimes.Add(respawnFlags[i], -1f);
         }
 
-        finalTimesText.gameObject.SetActive(false); // Ensure the final times TMP is disabled initially
+        finalTimesText.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -56,7 +56,7 @@ public class TimerManager : MonoBehaviour
             {
                 flagsReached[flagIndex] = true;
                 flagTimes[other.transform] = timeElapsed;
-                StartCoroutine(FlashTimerColor());
+                StartCoroutine(FlashTimerColor(flashColor));
 
                 if (flagIndex == respawnFlags.Count - 1)
                 {
@@ -76,11 +76,16 @@ public class TimerManager : MonoBehaviour
         }
     }
 
-    private IEnumerator FlashTimerColor()
+    private IEnumerator FlashTimerColor(Color flashColor)
     {
         timerText.color = flashColor;
         yield return new WaitForSeconds(flashDuration);
         timerText.color = originalColor;
+    }
+
+    public void FlashTimerOnCoinCollection()
+    {
+        StartCoroutine(FlashTimerColor(coinFlashColor));
     }
 
     private void StopTimer()
@@ -105,17 +110,15 @@ public class TimerManager : MonoBehaviour
                 float splitTime;
                 if (i == 0)
                 {
-                    // For the first flag, the split time is the same as the time at the first flag
                     splitTime = flagTimes[respawnFlags[i]];
                 }
                 else
                 {
-                    // For other flags, the split time is the difference between the current and previous flag times
                     splitTime = flagTimes[respawnFlags[i]] - flagTimes[respawnFlags[i - 1]];
                 }
 
                 finalTimes += $"Flag {i + 1} Split: {FormatTime(splitTime)}\n";
-                totalTime = flagTimes[respawnFlags[i]]; // Update total time to the last flag reached
+                totalTime = flagTimes[respawnFlags[i]];
             }
             else
             {
@@ -126,9 +129,19 @@ public class TimerManager : MonoBehaviour
         finalTimes += $"\nTotal Time: {FormatTime(totalTime)}";
 
         finalTimesText.text = finalTimes;
-        finalTimesText.gameObject.SetActive(true); // Enable the final times TMP object
+        finalTimesText.gameObject.SetActive(true);
 
         finalFlagSound.PlayOneShot(finalFlagSound.clip);
+    }
+
+    public void SubtractTime(int seconds)
+    {
+        if (timerRunning)
+        {
+            timeElapsed -= seconds;
+            if (timeElapsed < 0) timeElapsed = 0;
+            timerText.text = FormatTime(timeElapsed);
+        }
     }
 
     private string FormatTime(float time)

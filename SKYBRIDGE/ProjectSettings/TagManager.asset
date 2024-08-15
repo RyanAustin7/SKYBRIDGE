@@ -10,16 +10,18 @@ TagManager:
   - FinalFlag
   - TimerStart
   - RaceTrigger
+  - SlowFall
+  - SpeedBoost
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - groundLayer
   - Water
   - UI
   - whatIsGround
-  - 
-  - 
+  - DeathRespawner
+  - Powerup
   - 
   - 
   - 
